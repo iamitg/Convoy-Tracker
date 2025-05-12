@@ -44,6 +44,9 @@
             margin: 3px 0;
             background-color: #40444b;
             border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .history-item {
             margin-bottom: 8px;
@@ -61,6 +64,7 @@
             display: flex;
             gap: 10px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
         button {
             background-color: #7289da;
@@ -69,9 +73,41 @@
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
         button:hover {
             background-color: #677bc4;
+        }
+        input, textarea {
+            background-color: #40444b;
+            color: white;
+            border: 1px solid #202225;
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .delete-btn {
+            background-color: #f04747;
+            padding: 2px 8px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        .success-message {
+            color: #43b581;
+            text-align: center;
+            margin: 10px 0;
+            height: 20px;
+        }
+        #exportImport {
+            background-color: #40444b;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -80,119 +116,331 @@
     
     <div class="container">
         <div class="section">
-            <div class="section-title">🔹 Next Leader:</div>
-            <div id="nextLeader">PlayerA</div>
+            <div class="section-title">🔹 Current Run:</div>
+            <div><strong>Leader:</strong> <span id="currentLeader">[Not started]</span></div>
+            <div><strong>Supports:</strong> <span id="currentSupport1">-</span> & <span id="currentSupport2">-</span></div>
         </div>
         
         <div class="section">
-            <div class="section-title">🔹 Last Run:</div>
-            <div><strong>Date:</strong> <span id="lastDate">2023-11-15</span></div>
-            <div><strong>Leader:</strong> <span id="lastLeader">PlayerX</span></div>
-            <div><strong>Supports:</strong> <span id="lastSupport1">PlayerY</span> & <span id="lastSupport2">PlayerZ</span></div>
-        </div>
-        
-        <div class="section">
-            <div class="section-title">📋 Waiting List (Priority Order):</div>
-            <ol id="waitingList" class="player-list">
-                <li>PlayerB</li>
-                <li>PlayerC</li>
-                <li>PlayerD</li>
-                <li>PlayerE</li>
-            </ol>
+            <div class="section-title">📋 Available Players:</div>
+            <ul id="playerList" class="player-list">
+                <!-- Players will be added here -->
+            </ul>
+            <input type="text" id="newPlayer" placeholder="Enter player name (e.g. PlayerA)">
             <div class="controls">
-                <input type="text" id="newPlayer" placeholder="Player name">
                 <button onclick="addPlayer()">Add Player</button>
+                <button onclick="startNewRun()" style="background-color:#43b581">Start New Run</button>
+                <button onclick="clearAllPlayers()" style="background-color:#f04747">Clear All Players</button>
+            </div>
+            <div id="playerMessage" class="success-message"></div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">📜 Run History:</div>
+            <div id="history">
+                <!-- History will appear here automatically -->
+            </div>
+            <div class="controls">
+                <button onclick="clearHistory()" style="background-color:#f04747">Clear History</button>
             </div>
         </div>
         
         <div class="section">
-            <div class="section-title">📜 History (Last 5 Runs):</div>
-            <div id="history">
-                <div class="history-item">
-                    <strong>Leader:</strong> PlayerW | 
-                    <strong>Supports:</strong> PlayerX, PlayerY | 
-                    <strong>Date:</strong> 2023-11-14
-                </div>
-                <div class="history-item">
-                    <strong>Leader:</strong> PlayerV | 
-                    <strong>Supports:</strong> PlayerW, PlayerX | 
-                    <strong>Date:</strong> 2023-11-13
-                </div>
-                <div class="history-item">
-                    <strong>Leader:</strong> PlayerU | 
-                    <strong>Supports:</strong> PlayerV, PlayerW | 
-                    <strong>Date:</strong> 2023-11-12
-                </div>
+            <div class="section-title">📝 Notes:</div>
+            <textarea id="notes" placeholder="Add rules, special requests, or other notes..."></textarea>
+            <div class="controls">
+                <button onclick="saveNotes()">Save Notes</button>
             </div>
+            <div id="notesMessage" class="success-message"></div>
         </div>
         
-        <div class="controls">
-            <button onclick="completeRun()">Complete Run</button>
+        <div id="exportImport">
+            <div class="section-title">💾 Data Backup:</div>
+            <div class="controls">
+                <button onclick="exportData()">Export Data</button>
+                <button onclick="importData()">Import Data</button>
+            </div>
+            <textarea id="importExportData" placeholder="Paste exported data here to import"></textarea>
+            <div id="dataMessage" class="success-message"></div>
         </div>
         
         <div class="update-info">
-            Last updated: <span id="updateDate">2023-11-15</span>
+            Last updated: <span id="updateDate">[Never]</span>
         </div>
     </div>
 
     <script>
-        function completeRun() {
-            // Get current values
-            const leader = document.getElementById('nextLeader').textContent;
-            const support1 = prompt("Enter first support:");
-            const support2 = prompt("Enter second support:");
-            
-            if (!support1 || !support2) return;
-            
-            // Update last run
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('lastDate').textContent = today;
-            document.getElementById('lastLeader').textContent = leader;
-            document.getElementById('lastSupport1').textContent = support1;
-            document.getElementById('lastSupport2').textContent = support2;
-            
-            // Add to history
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.innerHTML = `
-                <strong>Leader:</strong> ${leader} | 
-                <strong>Supports:</strong> ${support1}, ${support2} | 
-                <strong>Date:</strong> ${today}
-            `;
-            document.getElementById('history').prepend(historyItem);
-            
-            // Remove oldest history if more than 5
-            if (document.getElementById('history').children.length > 5) {
-                document.getElementById('history').lastChild.remove();
-            }
-            
-            // Update next leader
-            const waitingList = document.getElementById('waitingList');
-            if (waitingList.children.length > 0) {
-                document.getElementById('nextLeader').textContent = waitingList.children[0].textContent;
-                waitingList.children[0].remove();
-            } else {
-                document.getElementById('nextLeader').textContent = "None - add more players!";
-            }
-            
-            // Update timestamp
-            document.getElementById('updateDate').textContent = today;
-        }
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+
+        // ======================
+        // CORE FUNCTIONS
+        // ======================
         
         function addPlayer() {
             const newPlayer = document.getElementById('newPlayer').value.trim();
-            if (!newPlayer) return;
+            if (!newPlayer) {
+                showMessage('playerMessage', "Please enter a name!", 'error');
+                return;
+            }
             
             const li = document.createElement('li');
-            li.textContent = newPlayer;
-            document.getElementById('waitingList').appendChild(li);
+            li.innerHTML = `
+                ${newPlayer}
+                <button class="delete-btn" onclick="removePlayer(this)">×</button>
+            `;
+            document.getElementById('playerList').appendChild(li);
             document.getElementById('newPlayer').value = '';
             
-            // If no next leader, set this player as next
-            if (document.getElementById('nextLeader').textContent === "None - add more players!") {
-                document.getElementById('nextLeader').textContent = newPlayer;
-                li.remove();
+            saveData();
+            showMessage('playerMessage', "Player added!", 'success');
+        }
+
+        function removePlayer(button) {
+            button.parentElement.remove();
+            saveData();
+            showMessage('playerMessage', "Player removed!", 'success');
+        }
+
+        function clearAllPlayers() {
+            if (confirm("Clear ALL players? This cannot be undone!")) {
+                document.getElementById('playerList').innerHTML = '';
+                saveData();
+                showMessage('playerMessage', "All players cleared!", 'success');
             }
+        }
+
+        function startNewRun() {
+            const players = Array.from(document.querySelectorAll('#playerList li'))
+                .map(li => li.textContent.replace('×', '').trim());
+            
+            if (players.length < 3) {
+                showMessage('playerMessage', "Need at least 3 players to start!", 'error');
+                return;
+            }
+            
+            const leader = prompt("Enter leader for this run:", players[0]);
+            if (!leader) return;
+            
+            const availableSupports = players.filter(p => p !== leader);
+            const support1 = prompt("Enter first support:", availableSupports[0]);
+            if (!support1) return;
+            
+            const support2 = prompt("Enter second support:", 
+                availableSupports.filter(p => p !== support1)[0] || availableSupports[0]);
+            if (!support2) return;
+            
+            // Update current run display
+            document.getElementById('currentLeader').textContent = leader;
+            document.getElementById('currentSupport1').textContent = support1;
+            document.getElementById('currentSupport2').textContent = support2;
+            
+            // Add to history
+            const now = new Date();
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <strong>${now.toLocaleDateString()} ${now.toLocaleTimeString()}:</strong><br>
+                👑 ${leader} | 🛡️ ${support1} + ${support2}
+            `;
+            document.getElementById('history').prepend(historyItem);
+            
+            // Keep only last 10 runs
+            const history = document.getElementById('history');
+            if (history.children.length > 10) {
+                history.lastChild.remove();
+            }
+            
+            updateTimestamp();
+            saveData();
+            showMessage('playerMessage', "New run started!", 'success');
+        }
+
+        function clearHistory() {
+            if (confirm("Clear ALL history? This cannot be undone!")) {
+                document.getElementById('history').innerHTML = '';
+                document.getElementById('currentLeader').textContent = "[Not started]";
+                document.getElementById('currentSupport1').textContent = "-";
+                document.getElementById('currentSupport2').textContent = "-";
+                saveData();
+            }
+        }
+
+        function saveNotes() {
+            saveData();
+            showMessage('notesMessage', "Notes saved!", 'success');
+        }
+
+        // ======================
+        // DATA PERSISTENCE
+        // ======================
+        
+        function saveData() {
+            const data = {
+                players: Array.from(document.querySelectorAll('#playerList li'))
+                    .map(li => li.textContent.replace('×', '').trim()),
+                currentLeader: document.getElementById('currentLeader').textContent,
+                currentSupports: [
+                    document.getElementById('currentSupport1').textContent,
+                    document.getElementById('currentSupport2').textContent
+                ],
+                history: Array.from(document.querySelectorAll('#history .history-item'))
+                    .map(item => item.innerHTML),
+                notes: document.getElementById('notes').value,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            try {
+                localStorage.setItem('lootTrainData', JSON.stringify(data));
+                updateTimestamp();
+            } catch (e) {
+                console.error("Failed to save data:", e);
+                showMessage('dataMessage', "Failed to save data!", 'error');
+            }
+        }
+
+        function loadData() {
+            try {
+                const savedData = localStorage.getItem('lootTrainData');
+                if (!savedData) return;
+                
+                const data = JSON.parse(savedData);
+                
+                // Load players
+                const playerList = document.getElementById('playerList');
+                playerList.innerHTML = '';
+                data.players.forEach(player => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `${player}<button class="delete-btn" onclick="removePlayer(this)">×</button>`;
+                    playerList.appendChild(li);
+                });
+                
+                // Load current run
+                document.getElementById('currentLeader').textContent = data.currentLeader || "[Not started]";
+                document.getElementById('currentSupport1').textContent = data.currentSupports?.[0] || "-";
+                document.getElementById('currentSupport2').textContent = data.currentSupports?.[1] || "-";
+                
+                // Load history
+                const history = document.getElementById('history');
+                history.innerHTML = '';
+                if (data.history) {
+                    data.history.forEach(itemHtml => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.innerHTML = itemHtml;
+                        history.appendChild(div);
+                    });
+                }
+                
+                // Load notes
+                document.getElementById('notes').value = data.notes || '';
+                
+                // Update timestamp
+                if (data.lastUpdated) {
+                    const updatedDate = new Date(data.lastUpdated);
+                    document.getElementById('updateDate').textContent = 
+                        `${updatedDate.toLocaleDateString()} ${updatedDate.toLocaleTimeString()}`;
+                }
+                
+            } catch (e) {
+                console.error("Failed to load data:", e);
+            }
+        }
+
+        function exportData() {
+            const data = {
+                players: Array.from(document.querySelectorAll('#playerList li'))
+                    .map(li => li.textContent.replace('×', '').trim()),
+                currentRun: {
+                    leader: document.getElementById('currentLeader').textContent,
+                    supports: [
+                        document.getElementById('currentSupport1').textContent,
+                        document.getElementById('currentSupport2').textContent
+                    ]
+                },
+                history: Array.from(document.querySelectorAll('#history .history-item'))
+                    .map(item => item.textContent),
+                notes: document.getElementById('notes').value,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const exportString = JSON.stringify(data, null, 2);
+            document.getElementById('importExportData').value = exportString;
+            navigator.clipboard.writeText(exportString)
+                .then(() => showMessage('dataMessage', "Data copied to clipboard!", 'success'))
+                .catch(() => showMessage('dataMessage', "Data ready for copy/paste", 'success'));
+        }
+
+        function importData() {
+            const importString = document.getElementById('importExportData').value.trim();
+            if (!importString) {
+                showMessage('dataMessage', "Paste exported data first!", 'error');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(importString);
+                
+                // Import players
+                const playerList = document.getElementById('playerList');
+                playerList.innerHTML = '';
+                if (data.players && data.players.length > 0) {
+                    data.players.forEach(player => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${player}<button class="delete-btn" onclick="removePlayer(this)">×</button>`;
+                        playerList.appendChild(li);
+                    });
+                }
+                
+                // Import current run
+                document.getElementById('currentLeader').textContent = data.currentRun?.leader || "[Not started]";
+                document.getElementById('currentSupport1').textContent = data.currentRun?.supports?.[0] || "-";
+                document.getElementById('currentSupport2').textContent = data.currentRun?.supports?.[1] || "-";
+                
+                // Import history
+                const history = document.getElementById('history');
+                history.innerHTML = '';
+                if (data.history && data.history.length > 0) {
+                    data.history.forEach(itemText => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.textContent = itemText;
+                        history.appendChild(div);
+                    });
+                }
+                
+                // Import notes
+                document.getElementById('notes').value = data.notes || '';
+                
+                saveData();
+                showMessage('dataMessage', "Data imported successfully!", 'success');
+                
+            } catch (e) {
+                console.error("Failed to import data:", e);
+                showMessage('dataMessage', "Invalid data format!", 'error');
+            }
+        }
+
+        // ======================
+        // HELPER FUNCTIONS
+        // ======================
+        
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('updateDate').textContent = 
+                `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+        }
+
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.color = type === 'error' ? '#f04747' : '#43b581';
+            
+            setTimeout(() => {
+                element.textContent = '';
+            }, 3000);
         }
     </script>
 </body>
